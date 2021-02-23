@@ -30,7 +30,7 @@
 [0-9]+      {yylval = yytext; return number;}      
 [a-zA-Z][0-9a-zA-Z]*    {yylval = yytext; return identifier;}
 [0-9]+.[0-9]+           {yylval = yytext; return float_num;}
-[a-zA-Z][0-9a-zA-Z]*"\.h"?  {yylval = yytext;return T_LIB_H;}
+(<)[a-zA-Z][a-zA-Z]*(>) {yylval = yytext;return T_LIB_H;}
 \".*\"      {yylval = strdup(yytext);return T_STRING;}
 "+"         {yylval = strdup(yytext);return T_add;}
 "-"         {yylval = strdup(yytext);return T_sub;}
@@ -57,7 +57,5 @@
 "{}"        {yylval = strdup(yytext);return T_flow_brackets;}
 "["         {yylval = strdup(yytext);return T_open_sq;}
 "]"         {yylval = strdup(yytext);return T_close_sq;}
-"{"         {yylval = strdup(yytext);return T_open_flow;}
-"}"         {yylval = strdup(yytext);return T_close_flow;}
 .           {yylval = strdup(yytext);return yytext[0];}
 %%

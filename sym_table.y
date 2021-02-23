@@ -19,7 +19,7 @@ ST st[10000];
 
 %union {int num; float dec; char id;} 
 
-%token T_INCLUDE T_INT T_FLOAT T_CHAR T_VOID T_MAIN T_IF T_ELSE T_WHILE T_BREAK T_CONTINUE T_COUT T_ENDL T_BOOL T_bool T_LIB_H T_STRING T_lt T_le T_gt T_ge T_eq T_ee T_ne T_inc T_dec T_and T_or T_not T_comma T_dot T_semic T_dims T_brackets T_flow_brackets T_open_sq T_close_sq T_open_flow T_close_flow 
+%token T_INCLUDE T_INT T_FLOAT T_CHAR T_VOID T_MAIN T_IF T_ELSE T_WHILE T_BREAK T_CONTINUE T_COUT T_ENDL T_BOOL T_bool T_LIB_H T_STRING T_lt T_le T_gt T_ge T_eq T_ee T_ne T_inc T_dec T_and T_or T_not T_comma T_dot T_semic T_dims T_brackets T_flow_brackets T_open_sq T_close_sq 
 
 %token T_add T_sub T_mul T_div T_mod
 
@@ -36,9 +36,10 @@ ST st[10000];
 
 S : START {printf("INPUT ACCEPTED");};
 
-START : T_INCLUDE T_lt T_LIB_H T_gt MAIN {printf("fuck of bitch");};
+START : T_INCLUDE T_LIB_H START
+	  | | T_INCLUDE T_STRING MAIN
+		| MAIN ;
  
-
 MAIN : T_VOID T_MAIN '{' LINE  '}'
 	 | T_VOID T_MAIN ';'
 	 | T_INT T_MAIN '{' LINE '}' 
@@ -82,10 +83,9 @@ LOOP_LINE : LOOP_LINE STATEMENT ';'
 STATEMENT : PRINT
 		  | EXP
 		  | ASSIGNMENT
-		  | DECLARATION
-		  | INC ;
+		  | DECLARATION ;
 
-PRINT : T_COUT '<''<' T_STRING
+PRINT : T_COUT T_lt T_lt T_STRING
 	  | T_COUT T_lt T_lt T_STRING T_lt T_lt T_ENDL ;
 
 EXP : ADD_SUB
@@ -124,9 +124,7 @@ INC : T_inc
 BOP : T_and
 	| T_or ;
 
-ASSIGNMENT : TYPE identifier T_eq EXP
-		   | identifier T_eq EXP ;
-
+ASSIGNMENT : identifier T_eq VAL;
 
 TYPE : T_INT
 	 | T_FLOAT
@@ -134,10 +132,19 @@ TYPE : T_INT
 
 DECLARATION : TYPE MUL_DEC ;
 			
-MUL_DEC : identifier ',' MUL_DEC | identifier ';' {printf("fuck");};
+MUL_DEC : identifier T_comma MUL_DEC | identifier | identifier T_eq EXP T_comma MUL_DEC | identifier T_eq EXP;
 
 %%
 
 void yyerror(const char * error){
 	printf(error);
+}
+
+int main () {
+	
+
+	if (yyparse() !=0 )
+		printf("\nDidn't Compile");
+
+	return 0;
 }
