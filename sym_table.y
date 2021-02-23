@@ -23,9 +23,48 @@ void print_symbol_table();
 
 %union {int num; float dec; char id;} 
 
-%token T_INCLUDE T_INT T_FLOAT T_CHAR T_VOID T_MAIN T_IF T_ELSE T_WHILE T_BREAK T_CONTINUE T_COUT T_ENDL T_BOOL T_bool T_LIB_H T_STRING T_lt T_le T_gt T_ge T_eq T_ee T_ne T_inc T_dec T_and T_or T_not T_comma T_dot T_semic T_dims T_brackets T_flow_brackets T_open_sq T_close_sq 
-
-%token T_add T_sub T_mul T_div T_mod
+%token T_INCLUDE 
+%token T_INT 
+%token T_FLOAT 
+%token T_CHAR 
+%token T_VOID 
+%token T_MAIN 
+%token T_IF 
+%token T_ELSE 
+%token T_WHILE 
+%token T_BREAK 
+%token T_CONTINUE 
+%token T_COUT 
+%token T_ENDL 
+%token T_BOOL 
+%token T_bool 
+%token T_LIB_H 
+%token T_STRING 
+%token T_lt 
+%token T_le 
+%token T_gt 
+%token T_ge
+%token T_eq 
+%token T_ee 
+%token T_ne 
+%token T_inc 
+%token T_dec 
+%token T_and
+%token T_or 
+%token T_not 
+%token T_comma 
+%token T_dot 
+%token T_semic 
+%token T_dims 
+%token T_brackets 
+%token T_flow_brackets 
+%token T_open_sq 
+%token T_close_sq 
+%token T_add 
+%token T_sub 
+%token T_mul 
+%token T_div 
+%token T_mod
 
 %token <num> number
 %token <dec> float_num
@@ -89,23 +128,23 @@ STATEMENT : PRINT
 		  | ASSIGNMENT
 		  | DECLARATION ;
 
-PRINT : T_COUT T_lt T_lt T_STRING	{insert_to_ST("T_COUT","NONE" , "key" , "NONE", @1.last_line); insert_to_ST("STRING","NONE" , "STRING" , "string", @4.last_line);}
-	  | T_COUT T_lt T_lt T_STRING T_lt T_lt T_ENDL {insert_to_ST("T_COUT","NONE" , "key" , "NONE", @1.last_line); insert_to_ST("STRING","NONE" , "STRING" , "string", @4.last_line);};
+PRINT : T_COUT T_lt T_lt T_STRING	{insert_to_ST("T_COUT","NONE" , "key" , "NONE", @1.last_line); insert_to_ST("MAT_STRING","NONE" , "STRING" , "string", @4.last_line);}
+	  | T_COUT T_lt T_lt T_STRING T_lt T_lt T_ENDL {insert_to_ST("T_COUT","NONE" , "key" , "NONE", @1.last_line); insert_to_ST("MAT_STRING","NONE" , "STRING" , "string", @4.last_line);};
 
 EXP : ADD_SUB
-	| ADD_SUB INC
+	| ADD_SUB INC 
 	| INC ADD_SUB;
 
 ADD_SUB : MUL_DIV
-		| ADD_SUB T_add MUL_DIV 
-		| ADD_SUB T_sub MUL_DIV ;
+		| ADD_SUB T_add MUL_DIV		{insert_to_ST("+","NONE" , "Operator" , "NONE", @1.last_line);}
+		| ADD_SUB T_sub MUL_DIV 	{insert_to_ST("-","NONE" , "Operator" , "NONE", @1.last_line);}  ;
 
 MUL_DIV : VAL 
-		| MUL_DIV T_mul VAL
-		| MUL_DIV T_div VAL ;
+		| MUL_DIV T_mul VAL			{insert_to_ST("*","NONE" , "Operator" , "NONE", @1.last_line);}
+		| MUL_DIV T_div VAL 		{insert_to_ST("/","NONE" , "Operator" , "NONE", @1.last_line);} ;
 
-VAL : number
-	 | identifier ;
+VAL : number						{insert_to_ST("NUM_VAL","NONE" , "LITERAL" , "NONE", @1.last_line);}
+	 | identifier 					 ;				
 
 COND : COND OP VAL
 	 | COND BOP VAL
@@ -114,22 +153,22 @@ COND : COND OP VAL
 	 | INC VAL
 	 | VAL ;
 
-OP : T_ee
-   | T_ne
-   | T_le
-   | T_ge
-   | T_lt
-   | T_gt ;
+OP : T_ee	{insert_to_ST("==","NONE" , "Cond_op" , "NONE", @1.last_line);}
+   | T_ne	{insert_to_ST("!=","NONE" , "Cond_op" , "NONE", @1.last_line);}
+   | T_le	{insert_to_ST("<=","NONE" , "Cond_op" , "NONE", @1.last_line);}
+   | T_ge	{insert_to_ST(">=","NONE" , "Cond_op" , "NONE", @1.last_line);}
+   | T_lt	{insert_to_ST("<","NONE" , "Cond_op" , "NONE", @1.last_line);}
+   | T_gt 	{insert_to_ST(">","NONE" , "Cond_op" , "NONE", @1.last_line);};
 
-UOP : T_not ;
+UOP : T_not {insert_to_ST("!","NONE" , "Operator" , "NONE", @1.last_line);};
 
 INC : T_inc
 	| T_dec ;
 
-BOP : T_and
-	| T_or ;
+BOP : T_and	{insert_to_ST("&&","NONE" , "Bin_op" , "NONE", @1.last_line);}
+	| T_or {insert_to_ST("||","NONE" , "Bin_op" , "NONE", @1.last_line);}; 
 
-ASSIGNMENT : identifier T_eq VAL;
+ASSIGNMENT : identifier T_eq EXP;
 
 TYPE : T_INT
 	 | T_FLOAT
@@ -156,13 +195,11 @@ int main () {
 
 
 void insert_to_ST(char *name, char *val,char *type,char *datatype,int line_num){
-	if(!strcmp(type , "key")){
-		strcpy(st[sno].name, name);
-		strcpy(st[sno].val, val);
-		st[sno].line_num = line_num;
-		++sno;
-	}
-	else if(!strcmp(type , "STRING")){
+	if((!strcmp(type , "key")) || 
+	(!strcmp(type , "STRING")) || 
+	(!strcmp(type, "Operator"))||
+	(!strcmp(type, "Bin_op")) ||
+	(!strcmp(type, "Cond_op"))){
 		strcpy(st[sno].name, name);
 		strcpy(st[sno].val, val);
 		st[sno].line_num = line_num;
