@@ -2,16 +2,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 #include "common.h"
+extern char *yytext;
+extern int yylineno;
 typedef struct symbol_table
 {
     char name[31];
-    char *value;
-    char type;
-    char *datatype;
-    int line;
+    char val[20];
+    int line_num;
 }ST;
 ST st[10000];
+int sno = 0;
+void insert_to_ST(char *name, char *val,char *type,char *datatype,int line_num);
+void print_symbol_table();
 %}
 
 %define parse.error verbose
@@ -34,26 +38,26 @@ ST st[10000];
 
 %%
 
-S : START {printf("INPUT ACCEPTED");};
+S : INCLUDE {printf("\nINPUT ACCEPTED\n");};
 
-START : T_INCLUDE T_LIB_H START
-	  | | T_INCLUDE T_STRING MAIN
+INCLUDE : T_INCLUDE T_LIB_H INCLUDE {insert_to_ST("T_INCLUDE","NONE" , "key" , "NONE", @1.last_line);}
+	    | T_INCLUDE T_STRING MAIN {insert_to_ST("T_INCLUDE", "NONE" , "key" , "NONE", @1.last_line);}
 		| MAIN ;
  
-MAIN : T_VOID T_MAIN '{' LINE  '}'
-	 | T_VOID T_MAIN ';'
-	 | T_INT T_MAIN '{' LINE '}' 
-	 | T_INT T_MAIN ';' ;
+MAIN : T_VOID T_MAIN '{' LINE  '}'  {insert_to_ST("T_VOID","NONE","key","NONE",@1.last_line);insert_to_ST("T_MAIN","NONE","key","NONE",@2.last_line);}
+	 | T_VOID T_MAIN ';'			{insert_to_ST("T_VOID","NONE","key","NONE",@1.last_line);insert_to_ST("T_MAIN","NONE","key","NONE",@2.last_line);}
+	 | T_INT T_MAIN '{' LINE '}' 	{insert_to_ST("T_INT","NONE","key","NONE",@1.last_line);insert_to_ST("T_MAIN","NONE","key","NONE",@2.last_line);}
+	 | T_INT T_MAIN ';'			{insert_to_ST("T_INT","NONE","key","NONE",@1.last_line);insert_to_ST("T_MAIN","NONE","key","NONE",@2.last_line);} ;
 
-LINE : LINE STATEMENT ';'
+LINE : LINE STATEMENT ';' 
 	 | STATEMENT ';'
 	 | LINE IF 
 	 | IF
 	 | LINE LOOP
 	 | LOOP ;
 
-IF : T_IF '(' COND ')' IF_BODY 
-   | T_IF '(' COND ')' IF_BODY T_ELSE IF_BODY
+IF : T_IF '(' COND ')' IF_BODY	{insert_to_ST("IF", "NONE" , "key" , "NONE", @1.last_line);}
+   | T_IF '(' COND ')' IF_BODY T_ELSE IF_BODY {insert_to_ST("IF", "NONE" , "key" , "NONE", @1.last_line);insert_to_ST("ELSE", "NONE" , "key" , "NONE", @6.last_line);}
 
 IF_BODY : '{' IF_LINE '}'
 		| STATEMENT ';' ;
@@ -65,7 +69,7 @@ IF_LINE : IF_LINE STATEMENT ';'
 		| IF 
 		| LOOP;
 
-LOOP : T_WHILE '(' COND ')' LOOP_BODY;
+LOOP : T_WHILE '(' COND ')' LOOP_BODY {insert_to_ST("T_WHILE","NONE" , "key" , "NONE", @1.last_line);};
 
 LOOP_BODY : '{' LOOP_LINE '}'
 		  | STATEMENT ';' 
@@ -76,8 +80,8 @@ LOOP_LINE : LOOP_LINE STATEMENT ';'
 		  | LOOP_LINE IF
 		  | STATEMENT ';'
 		  | LOOP
-		  | T_BREAK ';'
-		  | T_CONTINUE ';'
+		  | T_BREAK ';'		{insert_to_ST("T_BREAK","NONE" , "key" , "NONE", @1.last_line);}
+		  | T_CONTINUE ';'	{insert_to_ST("T_CONTINUE","NONE" , "key" , "NONE", @1.last_line);}
 		  | IF;
 
 STATEMENT : PRINT
@@ -85,14 +89,15 @@ STATEMENT : PRINT
 		  | ASSIGNMENT
 		  | DECLARATION ;
 
-PRINT : T_COUT T_lt T_lt T_STRING
-	  | T_COUT T_lt T_lt T_STRING T_lt T_lt T_ENDL ;
+PRINT : T_COUT T_lt T_lt T_STRING	{insert_to_ST("T_COUT","NONE" , "key" , "NONE", @1.last_line); insert_to_ST("STRING","NONE" , "STRING" , "string", @4.last_line);}
+	  | T_COUT T_lt T_lt T_STRING T_lt T_lt T_ENDL {insert_to_ST("T_COUT","NONE" , "key" , "NONE", @1.last_line); insert_to_ST("STRING","NONE" , "STRING" , "string", @4.last_line);};
 
 EXP : ADD_SUB
-	| ADD_SUB INC;
+	| ADD_SUB INC
+	| INC ADD_SUB;
 
 ADD_SUB : MUL_DIV
-		| ADD_SUB T_add MUL_DIV
+		| ADD_SUB T_add MUL_DIV 
 		| ADD_SUB T_sub MUL_DIV ;
 
 MUL_DIV : VAL 
@@ -145,6 +150,32 @@ int main () {
 
 	if (yyparse() !=0 )
 		printf("\nDidn't Compile");
-
+	print_symbol_table();
 	return 0;
+}
+
+
+void insert_to_ST(char *name, char *val,char *type,char *datatype,int line_num){
+	if(!strcmp(type , "key")){
+		strcpy(st[sno].name, name);
+		strcpy(st[sno].val, val);
+		st[sno].line_num = line_num;
+		++sno;
+	}
+	else if(!strcmp(type , "STRING")){
+		strcpy(st[sno].name, name);
+		strcpy(st[sno].val, val);
+		st[sno].line_num = line_num;
+		++sno;
+	}
+}
+
+
+void print_symbol_table(){
+	for(int i = 0;i < sno ; ++i){
+		printf("%s	", st[i].name);
+		printf("%s	", st[i].val);
+		printf("%d	", st[i].line_num);
+		printf("\n");
+	}
 }

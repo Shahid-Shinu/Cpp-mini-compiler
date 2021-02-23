@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 #define YYSTYPE char *
+#define YY_USER_ACTION yylloc.first_line = yylloc.last_line = yylineno;
 #include "sym_table.tab.h"
 #include "common.h"
 %}
 
+%option yylineno
 
 %%
 [/][/].*    ;
