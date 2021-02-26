@@ -4,8 +4,6 @@
 #include <stdbool.h>
 #include <string.h>
 #include "common.h"
-extern char *yytext;
-extern int yylineno;
 typedef struct symbol_table
 {
     char name[31];
@@ -23,7 +21,7 @@ void print_symbol_table();
 
 %union {int num; float dec; char* id;} 
 
-%token T_INCLUDE 
+%token T_STD
 %token T_INT 
 %token T_FLOAT 
 %token T_CHAR 
@@ -70,36 +68,57 @@ void print_symbol_table();
 %token <num> number
 %token <dec> float_num
 %token <id> identifier
+%token <id> T_INCLUDE
 
-%left T_lt T_gt
+%right T_eq
+%left T_ee T_ne
+%left T_lt T_gt T_le T_ge
 %left T_pl T_min
 %left T_mul T_div
+%left '(' ')'
 
 
 %%
 
 S : INCLUDE {printf("\nINPUT ACCEPTED\n");};
 
-INCLUDE : T_INCLUDE T_LIB_H INCLUDE
+INCLUDE : T_INCLUDE T_LIB_H INCLUDE  {insert_to_ST("Include","NONE" , "Bin_op" , "NONE", @1.last_line);printf("%s",$1);}
 		| T_INCLUDE T_STRING INCLUDE
-		| FUNC_CALLS;
+		| FUNCTIONS
+		| T_STD ';' INCLUDE ;
 
-FUNC_CALLS : MAIN
-		   | FUNC_DEF FUNC_CALLS;
+
+FUNCTIONS : MAIN
+		  | FUNC_DEF FUNCTIONS;
  
-MAIN : T_VOID T_MAIN '{' LINE '}'
-	 | T_VOID T_MAIN ';'
-	 | TYPE T_MAIN '{' LINE '}' 	
-	 | TYPE T_MAIN ';' ;
+MAIN : T_VOID T_MAIN FUNC_BODY
+	 | TYPE T_MAIN FUNC_BODY ;
 
 FUNC_PAR : FUNC_PAR TYPE VAL
+		 | FUNC_PAR TYPE ASSIGNMENT
+		 | TYPE ASSIGNMENT
 		 | FUNC_PAR T_comma
 		 | TYPE VAL ;
 
-FUNC_DEF :	T_VOID VAL '(' FUNC_PAR ')' ';'
-		 |	T_VOID VAL '(' FUNC_PAR ')' '{' LINE '}'
-		 |	TYPE VAL '(' FUNC_PAR ')' ';'
-		 |  TYPE VAL '(' FUNC_PAR ')' '{' LINE '}' ;
+FUNC_DEF :	T_VOID VAL PARAMS FUNC_BODY
+		 |	TYPE VAL PARAMS FUNC_BODY ;
+
+PARAMS : '(' FUNC_PAR ')'
+		| T_brackets ; 
+
+
+FUNC_BODY : '{' LINE '}'
+		  | ';'
+		  | '{' '}';
+
+FUNC_CALL : VAL '(' FUNC_CALL_PAR ')' 
+		  | VAL T_brackets ; 
+
+
+FUNC_CALL_PAR : FUNC_CALL_PAR VAL
+		 	  | FUNC_CALL_PAR T_comma
+		 	  | VAL ;
+
 
 LINE : LINE STATEMENT ';' 
 	 | STATEMENT ';'
@@ -108,8 +127,8 @@ LINE : LINE STATEMENT ';'
 	 | LINE LOOP
 	 | LOOP ;
 
-IF : T_IF '(' COND ')' IF_BODY	{insert_to_ST("IF", "NONE" , "key" , "NONE", @1.last_line);}
-   | T_IF '(' COND ')' IF_BODY T_ELSE IF_BODY {insert_to_ST("IF", "NONE" , "key" , "NONE", @1.last_line);insert_to_ST("ELSE", "NONE" , "key" , "NONE", @6.last_line);}
+IF : T_IF '(' COND ')' IF_BODY
+   | T_IF '(' COND ')' IF_BODY T_ELSE IF_BODY ;
 
 IF_BODY : '{' IF_LINE '}'
 		| STATEMENT ';' ;
@@ -121,7 +140,7 @@ IF_LINE : IF_LINE STATEMENT ';'
 		| IF 
 		| LOOP;
 
-LOOP : T_WHILE '(' COND ')' LOOP_BODY {insert_to_ST("T_WHILE","NONE" , "key" , "NONE", @1.last_line);};
+LOOP : T_WHILE '(' COND ')' LOOP_BODY ;
 
 LOOP_BODY : '{' LOOP_LINE '}'
 		  | STATEMENT ';' 
@@ -132,31 +151,32 @@ LOOP_LINE : LOOP_LINE STATEMENT ';'
 		  | LOOP_LINE IF
 		  | STATEMENT ';'
 		  | LOOP
-		  | T_BREAK ';'		{insert_to_ST("T_BREAK","NONE" , "key" , "NONE", @1.last_line);}
-		  | T_CONTINUE ';'	{insert_to_ST("T_CONTINUE","NONE" , "key" , "NONE", @1.last_line);}
+		  | T_BREAK ';'		
+		  | T_CONTINUE ';'
 		  | IF;
 
 ARRAY_EXPR	:	ARRAY_EXPR VAL
 			|	ARRAY_EXPR T_comma
 			|	VAL ;	
 
-ARRAY	: TYPE VAL T_open_sq VAL T_close_sq 
+ARRAY	: TYPE VAL '[' VAL ']' 
 		| TYPE VAL T_dims T_eq '{' ARRAY_EXPR '}'
-		| TYPE VAL T_open_sq VAL T_close_sq T_eq '{' ARRAY_EXPR '}';
+		| TYPE VAL '[' VAL ']' T_eq '{' ARRAY_EXPR '}';
 
 STATEMENT : PRINT
 		  | INPUT
 		  | EXP
 		  | ASSIGNMENT
 		  | DECLARATION 
-		  | ARRAY;
+		  | ARRAY
+		  | FUNC_CALL;
 
 PRINT_EXPR : T_lt T_lt T_STRING 
            | T_lt T_lt T_ENDL 
 		   | PRINT_EXPR T_lt T_lt T_STRING
 		   | PRINT_EXPR T_lt T_lt T_ENDL ;
 
-PRINT : T_COUT PRINT_EXPR
+PRINT : T_COUT PRINT_EXPR ;
 
 INPUT_EXPR : T_gt T_gt VAL
 		   | INPUT_EXPR T_gt T_gt VAL;
@@ -168,15 +188,15 @@ EXP : ADD_SUB
 	| INC ADD_SUB;
 
 ADD_SUB : MUL_DIV
-		| ADD_SUB T_add MUL_DIV		{insert_to_ST("+","NONE" , "Operator" , "NONE", @1.last_line);}
-		| ADD_SUB T_sub MUL_DIV 	{insert_to_ST("-","NONE" , "Operator" , "NONE", @1.last_line);}  ;
+		| ADD_SUB T_add MUL_DIV	
+		| ADD_SUB T_sub MUL_DIV ;
 
 MUL_DIV : VAL 
-		| MUL_DIV T_mul VAL			{insert_to_ST("*","NONE" , "Operator" , "NONE", @1.last_line);}
-		| MUL_DIV T_div VAL 		{insert_to_ST("/","NONE" , "Operator" , "NONE", @1.last_line);} ;
+		| MUL_DIV T_mul VAL	
+		| MUL_DIV T_div VAL ;
 
-VAL : number						{insert_to_ST("NUM_VAL","NONE" , "LITERAL" , "NONE", @1.last_line);}
-	 | identifier ;					 
+VAL : number	
+	| identifier ;					 
 			
 
 COND : COND OP VAL
@@ -186,30 +206,31 @@ COND : COND OP VAL
 	 | INC VAL
 	 | VAL ;
 
-OP : T_ee	{insert_to_ST("==","NONE" , "Cond_op" , "NONE", @1.last_line);}
-   | T_ne	{insert_to_ST("!=","NONE" , "Cond_op" , "NONE", @1.last_line);}
-   | T_le	{insert_to_ST("<=","NONE" , "Cond_op" , "NONE", @1.last_line);}
-   | T_ge	{insert_to_ST(">=","NONE" , "Cond_op" , "NONE", @1.last_line);}
-   | T_lt	{insert_to_ST("<","NONE" , "Cond_op" , "NONE", @1.last_line);}
-   | T_gt 	{insert_to_ST(">","NONE" , "Cond_op" , "NONE", @1.last_line);};
+OP : T_ee	
+   | T_ne	
+   | T_le	
+   | T_ge	
+   | T_lt	
+   | T_gt ;	
 
-UOP : T_not {insert_to_ST("!","NONE" , "Operator" , "NONE", @1.last_line);};
+UOP : T_not ;
 
 INC : T_inc
 	| T_dec ;
 
-BOP : T_and	{insert_to_ST("&&","NONE" , "Bin_op" , "NONE", @1.last_line);}
-	| T_or {insert_to_ST("||","NONE" , "Bin_op" , "NONE", @1.last_line);}; 
+BOP : T_and	
+	| T_or ; 
 
-ASSIGNMENT : identifier T_eq EXP;
+ASSIGNMENT : identifier T_eq EXP 				
+		   | identifier T_eq FUNC_CALL ;
 
-TYPE : T_INT
+TYPE : T_INT 
 	 | T_FLOAT
 	 | T_CHAR ;
 
 DECLARATION : TYPE MUL_DEC ;
 			
-MUL_DEC : identifier T_comma MUL_DEC | identifier | identifier T_eq EXP T_comma MUL_DEC | identifier T_eq EXP;
+MUL_DEC : identifier T_comma MUL_DEC | identifier | ASSIGNMENT T_comma MUL_DEC | ASSIGNMENT ;
 
 %%
 

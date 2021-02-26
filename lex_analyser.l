@@ -14,6 +14,7 @@
 [/][/].*    ;
 "/*"[^*]*"*"+([^*/][^*]*"*"+)*"/" ;
 [ \t\n]     ;
+"using namespace std" {return T_STD;}
 "#include"  {return T_INCLUDE;}
 "void"      {return T_VOID;}
 "int"       {return T_INT;}
@@ -31,7 +32,7 @@
 "bool"		{return T_BOOL;}	
 "true"|"false" 	{yylval = yytext;return T_bool;}
 [0-9]+      {yylval = yytext; return number;}      
-[a-zA-Z][0-9a-zA-Z]*    {yylval = yytext; return identifier;}
+[a-zA-Z_][0-9a-zA-Z_]*    {yylval = yytext; return identifier;}
 [0-9]+"."[0-9]+           {yylval = yytext; return float_num;}
 (<)[a-zA-Z][a-zA-Z]*(>) {yylval = yytext;return T_LIB_H;}
 \".*\"      {return T_STRING;}
@@ -44,7 +45,7 @@
 "<="        {return T_le;}
 ">"         {return T_gt;}
 ">="        {return T_ge;}
-"="         {return T_eq;}
+"="         {yylval = yytext;return T_eq;}
 "=="        {return T_ee;}
 "!="        {return T_ne;}
 "++" 		{return T_inc;}
@@ -56,8 +57,5 @@
 "."         {return T_dot;}
 "[]"        {return T_dims;}
 "()"        {return T_brackets;}
-"{}"        {return T_flow_brackets;}
-"["         {return T_open_sq;}
-"]"         {return T_close_sq;}
 .           {return yytext[0];}
 %%
