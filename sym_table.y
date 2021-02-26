@@ -21,7 +21,7 @@ void print_symbol_table();
 %define parse.error verbose
 %start S
 
-%union {int num; float dec; char id;} 
+%union {int num; float dec; char* id;} 
 
 %token T_INCLUDE 
 %token T_INT 
@@ -35,6 +35,7 @@ void print_symbol_table();
 %token T_BREAK 
 %token T_CONTINUE 
 %token T_COUT 
+%token T_CIN
 %token T_ENDL 
 %token T_BOOL 
 %token T_bool 
@@ -59,7 +60,7 @@ void print_symbol_table();
 %token T_brackets 
 %token T_flow_brackets 
 %token T_open_sq 
-%token T_close_sq 
+%token T_close_sq
 %token T_add 
 %token T_sub 
 %token T_mul 
@@ -79,14 +80,26 @@ void print_symbol_table();
 
 S : INCLUDE {printf("\nINPUT ACCEPTED\n");};
 
-INCLUDE : T_INCLUDE T_LIB_H INCLUDE {insert_to_ST("T_INCLUDE","NONE" , "key" , "NONE", @1.last_line);}
-	    | T_INCLUDE T_STRING MAIN {insert_to_ST("T_INCLUDE", "NONE" , "key" , "NONE", @1.last_line);}
-		| MAIN ;
+INCLUDE : T_INCLUDE T_LIB_H INCLUDE
+		| T_INCLUDE T_STRING INCLUDE
+		| FUNC_CALLS;
+
+FUNC_CALLS : MAIN
+		   | FUNC_DEF FUNC_CALLS;
  
-MAIN : T_VOID T_MAIN '{' LINE  '}'  {insert_to_ST("T_VOID","NONE","key","NONE",@1.last_line);insert_to_ST("T_MAIN","NONE","key","NONE",@2.last_line);}
-	 | T_VOID T_MAIN ';'			{insert_to_ST("T_VOID","NONE","key","NONE",@1.last_line);insert_to_ST("T_MAIN","NONE","key","NONE",@2.last_line);}
-	 | T_INT T_MAIN '{' LINE '}' 	{insert_to_ST("T_INT","NONE","key","NONE",@1.last_line);insert_to_ST("T_MAIN","NONE","key","NONE",@2.last_line);}
-	 | T_INT T_MAIN ';'			{insert_to_ST("T_INT","NONE","key","NONE",@1.last_line);insert_to_ST("T_MAIN","NONE","key","NONE",@2.last_line);} ;
+MAIN : T_VOID T_MAIN '{' LINE '}'
+	 | T_VOID T_MAIN ';'
+	 | TYPE T_MAIN '{' LINE '}' 	
+	 | TYPE T_MAIN ';' ;
+
+FUNC_PAR : FUNC_PAR TYPE VAL
+		 | FUNC_PAR T_comma
+		 | TYPE VAL ;
+
+FUNC_DEF :	T_VOID VAL '(' FUNC_PAR ')' ';'
+		 |	T_VOID VAL '(' FUNC_PAR ')' '{' LINE '}'
+		 |	TYPE VAL '(' FUNC_PAR ')' ';'
+		 |  TYPE VAL '(' FUNC_PAR ')' '{' LINE '}' ;
 
 LINE : LINE STATEMENT ';' 
 	 | STATEMENT ';'
@@ -123,13 +136,32 @@ LOOP_LINE : LOOP_LINE STATEMENT ';'
 		  | T_CONTINUE ';'	{insert_to_ST("T_CONTINUE","NONE" , "key" , "NONE", @1.last_line);}
 		  | IF;
 
+ARRAY_EXPR	:	ARRAY_EXPR VAL
+			|	ARRAY_EXPR T_comma
+			|	VAL ;	
+
+ARRAY	: TYPE VAL T_open_sq VAL T_close_sq 
+		| TYPE VAL T_dims T_eq '{' ARRAY_EXPR '}'
+		| TYPE VAL T_open_sq VAL T_close_sq T_eq '{' ARRAY_EXPR '}';
+
 STATEMENT : PRINT
+		  | INPUT
 		  | EXP
 		  | ASSIGNMENT
-		  | DECLARATION ;
+		  | DECLARATION 
+		  | ARRAY;
 
-PRINT : T_COUT T_lt T_lt T_STRING	{insert_to_ST("T_COUT","NONE" , "key" , "NONE", @1.last_line); insert_to_ST("MAT_STRING","NONE" , "STRING" , "string", @4.last_line);}
-	  | T_COUT T_lt T_lt T_STRING T_lt T_lt T_ENDL {insert_to_ST("T_COUT","NONE" , "key" , "NONE", @1.last_line); insert_to_ST("MAT_STRING","NONE" , "STRING" , "string", @4.last_line);};
+PRINT_EXPR : T_lt T_lt T_STRING 
+           | T_lt T_lt T_ENDL 
+		   | PRINT_EXPR T_lt T_lt T_STRING
+		   | PRINT_EXPR T_lt T_lt T_ENDL ;
+
+PRINT : T_COUT PRINT_EXPR
+
+INPUT_EXPR : T_gt T_gt VAL
+		   | INPUT_EXPR T_gt T_gt VAL;
+
+INPUT   :	T_CIN INPUT_EXPR ;
 
 EXP : ADD_SUB
 	| ADD_SUB INC 
@@ -144,7 +176,8 @@ MUL_DIV : VAL
 		| MUL_DIV T_div VAL 		{insert_to_ST("/","NONE" , "Operator" , "NONE", @1.last_line);} ;
 
 VAL : number						{insert_to_ST("NUM_VAL","NONE" , "LITERAL" , "NONE", @1.last_line);}
-	 | identifier 					 ;				
+	 | identifier ;					 
+			
 
 COND : COND OP VAL
 	 | COND BOP VAL
@@ -181,7 +214,7 @@ MUL_DEC : identifier T_comma MUL_DEC | identifier | identifier T_eq EXP T_comma 
 %%
 
 void yyerror(const char * error){
-	printf(error);
+	printf("%s", error);
 }
 
 int main () {

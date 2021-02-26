@@ -12,7 +12,7 @@
 
 %%
 [/][/].*    ;
-[/]\*.*\*[/] ;
+"/*"[^*]*"*"+([^*/][^*]*"*"+)*"/" ;
 [ \t\n]     ;
 "#include"  {return T_INCLUDE;}
 "void"      {return T_VOID;}
@@ -26,12 +26,13 @@
 "break"     {return T_BREAK;}
 "continue"  {return T_CONTINUE;}
 "cout"      {return T_COUT;}
+"cin"      {return T_CIN;}
 "endl"      {return T_ENDL;}
 "bool"		{return T_BOOL;}	
 "true"|"false" 	{yylval = yytext;return T_bool;}
 [0-9]+      {yylval = yytext; return number;}      
 [a-zA-Z][0-9a-zA-Z]*    {yylval = yytext; return identifier;}
-[0-9]+.[0-9]+           {yylval = yytext; return float_num;}
+[0-9]+"."[0-9]+           {yylval = yytext; return float_num;}
 (<)[a-zA-Z][a-zA-Z]*(>) {yylval = yytext;return T_LIB_H;}
 \".*\"      {return T_STRING;}
 "+"         {return T_add;}
