@@ -21,6 +21,7 @@ void print_symbol_table();
 
 %union {int num; float dec; char* id;} 
 
+%token T_INCLUDE
 %token T_STD
 %token T_INT 
 %token T_FLOAT 
@@ -68,7 +69,7 @@ void print_symbol_table();
 %token <num> number
 %token <dec> float_num
 %token <id> identifier
-%token <id> T_INCLUDE
+
 
 %right T_eq
 %left T_ee T_ne
@@ -82,7 +83,7 @@ void print_symbol_table();
 
 S : INCLUDE {printf("\nINPUT ACCEPTED\n");};
 
-INCLUDE : T_INCLUDE T_LIB_H INCLUDE  {insert_to_ST("Include","NONE" , "Bin_op" , "NONE", @1.last_line);printf("%s",$1);}
+INCLUDE : T_INCLUDE T_LIB_H INCLUDE  
 		| T_INCLUDE T_STRING INCLUDE
 		| FUNCTIONS
 		| T_STD ';' INCLUDE ;
@@ -221,7 +222,7 @@ INC : T_inc
 BOP : T_and	
 	| T_or ; 
 
-ASSIGNMENT : identifier T_eq EXP 				
+ASSIGNMENT : identifier T_eq EXP 			{insert_to_ST($1,"NONE" , "Bin_op" , "NONE", @1.last_line);}	
 		   | identifier T_eq FUNC_CALL ;
 
 TYPE : T_INT 

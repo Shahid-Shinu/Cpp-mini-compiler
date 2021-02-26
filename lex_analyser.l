@@ -32,7 +32,7 @@
 "bool"		{return T_BOOL;}	
 "true"|"false" 	{yylval = yytext;return T_bool;}
 [0-9]+      {yylval = yytext; return number;}      
-[a-zA-Z_][0-9a-zA-Z_]*    {yylval = yytext; return identifier;}
+[a-zA-Z_][0-9a-zA-Z_]*    {yylval = strdup(yytext); return identifier;}
 [0-9]+"."[0-9]+           {yylval = yytext; return float_num;}
 (<)[a-zA-Z][a-zA-Z]*(>) {yylval = yytext;return T_LIB_H;}
 \".*\"      {return T_STRING;}
