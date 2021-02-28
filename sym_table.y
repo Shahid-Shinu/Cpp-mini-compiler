@@ -244,6 +244,9 @@ int main () {
 
 	if (yyparse() !=0 )
 		printf("\nDidn't Compile");
+	printf("\n");
+	printf("The Symbol Table\n");
+	printf("-------------------------\n");
 	print_symbol_table();
 	return 0;
 }
