@@ -142,9 +142,15 @@ LINE : LINE STATEMENT ';'
 	 | LINE LOOP
 	 | LOOP ;
 
-IF : T_IF '(' COND ')' IF_BODY
+/*IF : T_IF '(' COND ')' IF_BODY
    | T_IF '(' COND ')' IF_BODY T_ELSE IF_BODY 
-   | T_IF '(' COND ')' IF_BODY T_ELSE T_IF '(' COND ')' IF_BODY T_ELSE IF_BODY;
+   | T_IF '(' COND ')' IF_BODY T_ELSE T_IF '(' COND ')' IF_BODY T_ELSE IF_BODY;*/
+   
+IF : T_IF '(' COND ')' IF_BODY ELSE
+
+ELSE: T_ELSE T_IF '(' COND ')' IF_BODY ELSE
+	| T_ELSE IF_BODY
+	|;
    
 
 IF_BODY : '{' IF_LINE '}'
