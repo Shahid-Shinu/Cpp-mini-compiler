@@ -240,7 +240,13 @@ STATEMENT : PRINT
 		  | ARRAY
 		  | FUNC_CALL
 		  | TERN_OP
-		  | T_RETURN VAL
+		  | T_RETURN VAL        {    	printf("return %s\n",$2->val);
+									    strcpy(quad[quad_ind].op,"return");
+									    strcpy(quad[quad_ind].arg1,$2->val);
+										strcpy(quad[quad_ind].arg2,"NULL");
+									    strcpy(quad[quad_ind].res,"null");
+									    quad_ind++;
+								}
 		  | T_RETURN;
 
 PRINT_EXPR : T_lt T_lt EXP 
@@ -292,14 +298,15 @@ ADD_SUB : MUL_DIV					{ $$ = makenode(); $$ = $1;}
 
 MUL_DIV : VAL 					{$$ = makenode(); $$ = $1;}
 		| MUL_DIV T_mul VAL		{stack_push($1);stack_push_str("*");stack_push($3);	$$ = makenode(); sprintf($$->val,"%f",atof($1->val) * atof($3->val)); strcpy($$->idn,codegen());$$->is_idn=1;} 
-		| MUL_DIV T_div VAL 	{stack_push($1);stack_push_str("/");stack_push($3);	$$ = makenode(); sprintf($$->val,"%f",atof($1->val) / atof($3->val)); strcpy($$->idn,codegen());$$->is_idn=1;} 
-		| '(' EXP ')'			{	$$ = makenode(); $$ = $2; };
+		| MUL_DIV T_div VAL 	{stack_push($1);stack_push_str("/");stack_push($3);	$$ = makenode(); sprintf($$->val,"%f",atof($1->val) / atof($3->val)); strcpy($$->idn,codegen());$$->is_idn=1;} ;
+		
 
 VAL : number				{$$ = makenode(); strcpy($$->val,$1);$$->is_idn = 0;}
 	| float_num				{$$ = makenode(); strcpy($$->val,$1);$$->is_idn = 0;}
 	| character 			{$$ = makenode(); strcpy($$->val,$1);$$->is_idn = 0;}
 	| string   				{$$ = makenode(); strcpy($$->val,$1);$$->is_idn = 0;}
-	| identifier 			{$$ = makenode(); strcpy($$->val,search_symbol($1)); strcpy($$->idn,$1); $$->is_idn = 1;};		 
+	| identifier 			{$$ = makenode(); strcpy($$->val,search_symbol($1)); strcpy($$->idn,$1); $$->is_idn = 1;}
+	| '(' EXP ')'			{	$$ = makenode(); $$ = $2; };	 
 			
 
 COND : COND T_ee VAL  		{stack_push($1);stack_push_str("==");stack_push($3); $$ = makenode(); sprintf($$->val,"%d",atof($1->val) == atof($3->val));strcpy($$->idn,codegen());$$->is_idn=1;}
@@ -619,13 +626,20 @@ void if_cond(Node *cond,int line_num){
 	printf("%s = not %s\n",temp,cond->idn);
 
     strcpy(quad[quad_ind].op,"not");
-    strcpy(quad[quad_ind].arg1,temp);
+    strcpy(quad[quad_ind].arg1,cond->idn);
     strcpy(quad[quad_ind].arg2,"NULL");
-    char temp_res[31];
-    sprintf(temp_res,"L%d",label_ind);
-    strcpy(quad[quad_ind].res,temp_res);	
+    strcpy(quad[quad_ind].res,temp);	
     quad_ind++;
 	printf("if %s goto L%d\n",temp,label_ind);
+    strcpy(quad[quad_ind].op,"if");
+    strcpy(quad[quad_ind].arg1,temp);
+    strcpy(quad[quad_ind].arg2,"NULL");
+    char x[10];
+    sprintf(x,"%d",label_ind);
+    char l[]="L";
+    strcpy(quad[quad_ind].res,strcat(l,x));
+    quad_ind++;
+    temp_i++;
 }
 
 void while1()
