@@ -11,21 +11,6 @@ omment
 
 using namespace std;
 
-// int call(){
-// 	int a,b;
-// }
-
-// int anothercall(int a=2,float b=2,char c){
-// 	//inr a;
-// 	return a;
-// }
-
-
-// int anothercall2(int a,float b){
-
-// }
-
-// void anothercall1();
 
 int main() {
 
@@ -52,8 +37,6 @@ int main() {
 
 	// // a = 2     // no semicolon
 
-	float n = a+10.3;					// type casting
-	int o = a+10.3;
 
 	// int p = a > b ? a*b : (a/b);
 	// a = a < b ? (b-a): a+b;					// Ternary Operator assignment and declaration
@@ -65,43 +48,34 @@ int main() {
 
 	arr0[0] = 357;				//Accesing Array elements
 	arr1[1] = 397;
-	int q = arr2[2];
 	// int r = arr2[5]; 			//Error
 	// arr2[5] = 5;
 
-	// int pos_inc = a++;				//increment operators
-	// int pos_dec = b--;
-	// int pre_inc = ++b;
-	// int pre_dec = --a;
+	int pos_inc = a++;				//increment operators
+	int pos_dec = b--;
+	int pre_inc = ++b;
+	int pre_dec = --a;
 
 	// a+2;		// grammar accepted
 
 	// anothercall();		//Function calls
 	// anothercall2(2,3);
 
+	if(a==2){           //if-else constructs
+		a = a+2;
+	}
+	else{
+		a = a-2;
+	}
+	
+	if(a==2){
+		cout << a;
+	}
 
-	while(a != f && a){   // while and if-else constructs
+	while(a != f){   // while
 		a--;
-		if(a==2){
-			while(1);
-		}
-		else{
-			while(a==1);
-		}
-		if(a==2){
-			while(1);
-		}
-		else if(d != a && b > a)
-		{
-			cout << a;
-		}
-		else if(d != a && b > a)
-		{
-			cout << a;
-		}
-		else{
-			while(a==1);
-		}
+		cout << a;
+
 	}
 	// a = a+10;
 	return 0;		//grammar accepted
